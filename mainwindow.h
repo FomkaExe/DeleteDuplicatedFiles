@@ -19,9 +19,11 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+public slots:
+    void openFolder();
+
 private:
     Ui::MainWindow *ui;
-//    QFileSystemModel *model;
     DuplicateFSModel *model;
 };
 #endif // MAINWINDOW_H

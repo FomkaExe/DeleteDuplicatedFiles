@@ -7,7 +7,7 @@ class QVariant;
 
 class FSItem {
 public:
-    explicit FSItem(const QList<QVariant> &data, FSItem *parentItem = nullptr);
+    explicit FSItem(const QList<QVariant> &data, const QString &path, FSItem *parentItem = nullptr);
     ~FSItem();
 
     void appendChild(FSItem *child);
@@ -19,9 +19,14 @@ public:
     int getItemRow() const;
     FSItem *getItemParent();
 
+    void generateMD5();
+    bool isDir();
+
 private:
     QList<FSItem *> m_childItems;
     QList<QVariant> m_itemData;
+    QString m_path;
+    bool m_isDir;
     FSItem *m_parentItem;
 };
 

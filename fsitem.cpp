@@ -1,9 +1,15 @@
 #include "fsitem.h"
 
 #include <QVariant>
+#include <QCryptographicHash>
+#include <QFileInfo>
+#include <QDebug>
 
-FSItem::FSItem(const QList<QVariant> &data, FSItem *parentItem)
-    : m_itemData(data), m_parentItem(parentItem) {}
+FSItem::FSItem(const QList<QVariant> &data, const QString &path, FSItem *parentItem)
+    : m_itemData(data), m_path(path), m_isDir(false), m_parentItem(parentItem) {
+    QFileInfo info(path);
+    m_isDir = info.isDir();
+}
 
 FSItem::~FSItem() {
     qDeleteAll(m_childItems);
@@ -44,5 +50,22 @@ int FSItem::getItemRow() const {
 
 FSItem *FSItem::getItemParent() {
     return m_parentItem;
+}
+
+void FSItem::generateMD5() {
+    QFile file(m_path);
+    QCryptographicHash MD5hash(QCryptographicHash::Md5);
+    QByteArray data;
+    QByteArray hash;
+    file.open(QIODevice::ReadOnly);
+    if (file.isOpen()) {
+        data = file.readAll();
+        hash = MD5hash.hash(data, QCryptographicHash::Md5);
+        m_itemData.append(hash);
+    }
+}
+
+bool FSItem::isDir() {
+    return m_isDir;
 }
 

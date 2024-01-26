@@ -19,6 +19,7 @@ public:
     QVariant headerData(int section, Qt::Orientation orientation,
                     int role = Qt::DisplayRole) const;
     QString getSize(quint64 size);
+    void generateChildMD5(FSItem *parent);
 
 private:
     void setupItemData(FSItem* parent, const QString& path);

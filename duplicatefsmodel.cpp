@@ -2,10 +2,12 @@
 
 #include <QFile>
 #include <QDebug>
+#include <QDateTime>
 
 DuplicateFSModel::DuplicateFSModel(const QString& root_path, QObject *parent)
     : QAbstractItemModel{parent} {
     setupModelData(root_path);
+    generateChildMD5(m_root);
 }
 
 DuplicateFSModel::~DuplicateFSModel() {
@@ -88,11 +90,11 @@ QVariant DuplicateFSModel::headerData(int section, Qt::Orientation orientation,
             return QString("Size");
             break;
         case 2:
-            return QString("MD5");
-            break;
-        case 3:
             return QString("Created");
             break;
+//        case 3:
+//            return QString("MD5");
+//            break;
         }
     }
     return QVariant();
@@ -126,6 +128,17 @@ QString DuplicateFSModel::getSize(quint64 size) {
     return newSize;
 }
 
+void DuplicateFSModel::generateChildMD5(FSItem *parent) {
+    for (int i = 0; i < parent->childCount(); ++i) {
+        FSItem *item = parent->getChild(i);
+        if (!item->isDir()) {
+            item->generateMD5();
+        } else {
+            generateChildMD5(item);
+        }
+    }
+}
+
 void DuplicateFSModel::setupItemData(FSItem *parent, const QString &path)
 {
     QDir root(path);
@@ -143,7 +156,11 @@ void DuplicateFSModel::setupItemData(FSItem *parent, const QString &path)
         } else {
             childList.append("");
         }
-        FSItem *child = new FSItem(childList, parent);
+        childList.append(current.birthTime().toString());
+        if (isDir) {
+            childList.append("");
+        }
+        FSItem *child = new FSItem(childList, current.absoluteFilePath(), parent);
         parent->appendChild(child);
         if (current.isDir()) {
             setupItemData(child, current.filePath());
@@ -154,7 +171,7 @@ void DuplicateFSModel::setupItemData(FSItem *parent, const QString &path)
 void DuplicateFSModel::setupModelData(const QString &root_path)
 {
     QDir root(root_path);
-    m_root = new FSItem(QList<QVariant>({root.dirName(), "Size"}));
+    m_root = new FSItem(QList<QVariant>({root.dirName(), "Size", "Date"/*, "1"*/}), root_path);
 
     setupItemData(m_root, root_path);
 }
