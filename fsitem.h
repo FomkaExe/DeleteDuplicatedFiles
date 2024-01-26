@@ -15,7 +15,7 @@ public:
     FSItem *getChild(int row);
     int childCount() const;
     int columnCount() const;
-    QVariant getColumnData(int column) const;
+    QVariant data(int column) const;
     int getItemRow() const;
     FSItem *getItemParent();
 

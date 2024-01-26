@@ -28,7 +28,7 @@ int FSItem::columnCount() const {
     return m_itemData.count();
 }
 
-QVariant FSItem::getColumnData(int column) const {
+QVariant FSItem::data(int column) const {
     if (column < 0 || column >= m_itemData.size()) {
         return QVariant();
     }
