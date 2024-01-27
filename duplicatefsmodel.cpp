@@ -4,8 +4,11 @@
 #include <QDebug>
 #include <QDateTime>
 
+#include <algorithm>
+
 DuplicateFSModel::DuplicateFSModel(const QString& root_path, QObject *parent)
-    : QAbstractItemModel{parent} {
+    : QAbstractItemModel{parent}
+    , m_item_counter(0) {
     setupModelData(root_path);
     generateChildMD5(m_root);
 }
@@ -71,12 +74,22 @@ QVariant DuplicateFSModel::data(const QModelIndex &index, int role) const {
     if (!index.isValid())
         return QVariant();
 
-    if (role != Qt::DisplayRole)
+    if (role != Qt::DisplayRole && role != Qt::BackgroundRole)
         return QVariant();
 
     FSItem *item = static_cast<FSItem*>(index.internalPointer());
 
-    return item->data(index.column());
+    if (role == Qt::DisplayRole) {
+        return item->data(index.column());
+    } else if (role == Qt::BackgroundRole) {
+        if (item->duplicate()) {
+            return QColor(Qt::GlobalColor::red);
+        } else {
+            return QVariant();
+        }
+    }
+
+    return QVariant();
 }
 
 QVariant DuplicateFSModel::headerData(int section, Qt::Orientation orientation,
@@ -92,9 +105,6 @@ QVariant DuplicateFSModel::headerData(int section, Qt::Orientation orientation,
         case 2:
             return QString("Created");
             break;
-//        case 3:
-//            return QString("MD5");
-//            break;
         }
     }
     return QVariant();
@@ -139,6 +149,28 @@ void DuplicateFSModel::generateChildMD5(FSItem *parent) {
     }
 }
 
+uint64_t DuplicateFSModel::getItemCount() {
+    return m_item_counter;
+}
+
+void DuplicateFSModel::findDuplicates() {
+    layoutAboutToBeChanged();
+
+    QList<FSItem *> list;
+    makeItemsList(list, m_root);
+    std::sort(list.begin(), list.end(), [](FSItem *a, FSItem *b)
+                                        {
+                                            return a->getHash() > b->getHash();
+                                        });
+    for (int i = 0; i < list.size() - 1; ++i) {
+        if (list[i]->getHash() == list[i+1]->getHash()) {
+            list[i+1]->setDuplicate(true);
+            qDebug() << list[i+1]->path() << "is duple";
+        }
+    }
+    layoutChanged();
+}
+
 void DuplicateFSModel::setupItemData(FSItem *parent, const QString &path)
 {
     QDir root(path);
@@ -162,6 +194,7 @@ void DuplicateFSModel::setupItemData(FSItem *parent, const QString &path)
         }
         FSItem *child = new FSItem(childList, current.absoluteFilePath(), parent);
         parent->appendChild(child);
+        ++m_item_counter;
         if (current.isDir()) {
             setupItemData(child, current.filePath());
         }
@@ -171,7 +204,19 @@ void DuplicateFSModel::setupItemData(FSItem *parent, const QString &path)
 void DuplicateFSModel::setupModelData(const QString &root_path)
 {
     QDir root(root_path);
-    m_root = new FSItem(QList<QVariant>({root.dirName(), "Size", "Date"/*, "1"*/}), root_path);
+    m_root = new FSItem(QList<QVariant>({root.dirName(), "Size", "Date"}), root_path);
 
     setupItemData(m_root, root_path);
+}
+
+void DuplicateFSModel::makeItemsList(QList<FSItem *> &list, FSItem *root)
+{
+    for (int i = 0; i < root->childCount(); ++i) {
+        FSItem *item = root->getChild(i);
+        if (!item->isDir()) {
+            list.append(item);
+        } else {
+            makeItemsList(list, item);
+        }
+    }
 }

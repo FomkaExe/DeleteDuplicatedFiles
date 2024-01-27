@@ -20,11 +20,15 @@ public:
                     int role = Qt::DisplayRole) const;
     QString getSize(quint64 size);
     void generateChildMD5(FSItem *parent);
+    uint64_t getItemCount();
+    void findDuplicates();
 
 private:
     void setupItemData(FSItem* parent, const QString& path);
     void setupModelData(const QString& root_path);
+    void makeItemsList(QList<FSItem *> &list, FSItem *root);
     FSItem* m_root;
+    uint64_t m_item_counter;
 };
 
 #endif // DUPLICATEFILESYSTEMMODEL_H

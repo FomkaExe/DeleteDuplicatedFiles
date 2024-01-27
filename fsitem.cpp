@@ -6,7 +6,7 @@
 #include <QDebug>
 
 FSItem::FSItem(const QList<QVariant> &data, const QString &path, FSItem *parentItem)
-    : m_itemData(data), m_path(path), m_isDir(false), m_parentItem(parentItem) {
+    : m_itemData(data), m_path(path),m_hash(nullptr), m_duplicate(false), m_isDir(false), m_parentItem(parentItem) {
     QFileInfo info(path);
     m_isDir = info.isDir();
 }
@@ -19,7 +19,7 @@ void FSItem::appendChild(FSItem *child) {
     m_childItems.append(child);
 }
 
-FSItem *FSItem::getChild(int row) {
+FSItem *FSItem::getChild(int row) const{
     if (row < 0 || row >= m_childItems.size()) {
         return nullptr;
     }
@@ -48,7 +48,7 @@ int FSItem::getItemRow() const {
     return 0;
 }
 
-FSItem *FSItem::getItemParent() {
+FSItem *FSItem::getItemParent() const {
     return m_parentItem;
 }
 
@@ -56,16 +56,30 @@ void FSItem::generateMD5() {
     QFile file(m_path);
     QCryptographicHash MD5hash(QCryptographicHash::Md5);
     QByteArray data;
-    QByteArray hash;
     file.open(QIODevice::ReadOnly);
     if (file.isOpen()) {
         data = file.readAll();
-        hash = MD5hash.hash(data, QCryptographicHash::Md5);
-        m_itemData.append(hash);
+        m_hash = MD5hash.hash(data, QCryptographicHash::Md5);
     }
 }
 
-bool FSItem::isDir() {
+bool FSItem::isDir() const {
     return m_isDir;
+}
+
+QByteArray FSItem::getHash() const {
+    return m_hash;
+}
+
+QString FSItem::path() const {
+    return m_path;
+}
+
+bool FSItem::duplicate() const {
+    return m_duplicate;
+}
+
+void FSItem::setDuplicate(bool duplicate) {
+    m_duplicate = duplicate;
 }
 

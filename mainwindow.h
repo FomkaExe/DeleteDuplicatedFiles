@@ -1,4 +1,4 @@
-#ifndef MAINWINDOW_H
+﻿#ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
 #include <QMainWindow>
@@ -21,6 +21,7 @@ public:
 
 public slots:
     void openFolder();
+    void searchDuplicatesButtonSlot();
 
 private:
     Ui::MainWindow *ui;

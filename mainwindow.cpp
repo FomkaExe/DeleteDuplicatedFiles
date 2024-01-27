@@ -11,9 +11,9 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
     , model(nullptr) {
-
     ui->setupUi(this);
     connect(ui->openButton, SIGNAL(clicked()), this, SLOT(openFolder()));
+    connect(ui->searchButton, SIGNAL(clicked()), this, SLOT(searchDuplicatesButtonSlot()));
 }
 
 MainWindow::~MainWindow() {
@@ -31,5 +31,13 @@ void MainWindow::openFolder() {
         model = new DuplicateFSModel(path, this);
         ui->treeView->setModel(model);
     }
+    qDebug() << model->getItemCount();
+}
+
+void MainWindow::searchDuplicatesButtonSlot() {
+    if (!model) {
+        return;
+    }
+    model->findDuplicates();
 }
 
