@@ -63,7 +63,6 @@ void MainWindow::deleteDuplicatesButtonSlot() {
     QMessageBox msgbox;
     msgbox.setText(QString("Deleted %1 files").arg(deletedFilesAmount));
     msgbox.exec();
-    qDebug() << "WTF";
 }
 
 void MainWindow::actionAboutQtSlot() {
