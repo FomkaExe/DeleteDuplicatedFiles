@@ -22,6 +22,7 @@ public:
     void generateChildMD5(FSItem *parent);
     uint64_t getItemCount();
     void findDuplicates();
+    int deleteDuplicates(FSItem *root = nullptr);
 
 private:
     void setupItemData(FSItem* parent, const QString& path);

@@ -19,6 +19,10 @@ void FSItem::appendChild(FSItem *child) {
     m_childItems.append(child);
 }
 
+void FSItem::deleteChild(int index) {
+    m_childItems.removeAt(index);
+}
+
 FSItem *FSItem::getChild(int row) const{
     if (row < 0 || row >= m_childItems.size()) {
         return nullptr;

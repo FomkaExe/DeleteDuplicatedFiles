@@ -20,8 +20,10 @@ public:
     ~MainWindow();
 
 public slots:
-    void openFolder();
+    void openFolderButtonSlot();
     void searchDuplicatesButtonSlot();
+    void deleteDuplicatesButtonSlot();
+    void actionAboutQtSlot();
 
 private:
     Ui::MainWindow *ui;

@@ -11,6 +11,7 @@ public:
     ~FSItem();
 
     void appendChild(FSItem *child);
+    void deleteChild(int index);
 
     FSItem *getChild(int row) const;
     int childCount() const;

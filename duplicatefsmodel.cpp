@@ -165,14 +165,12 @@ void DuplicateFSModel::findDuplicates() {
     for (int i = 0; i < list.size() - 1; ++i) {
         if (list[i]->getHash() == list[i+1]->getHash()) {
             list[i+1]->setDuplicate(true);
-            qDebug() << list[i+1]->path() << "is duple";
         }
     }
     layoutChanged();
 }
 
-void DuplicateFSModel::setupItemData(FSItem *parent, const QString &path)
-{
+void DuplicateFSModel::setupItemData(FSItem *parent, const QString &path) {
     QDir root(path);
     QFileInfoList entryList = root.entryInfoList();
     for (int i = 0; i < entryList.size(); ++i) {
@@ -201,8 +199,7 @@ void DuplicateFSModel::setupItemData(FSItem *parent, const QString &path)
     }
 }
 
-void DuplicateFSModel::setupModelData(const QString &root_path)
-{
+void DuplicateFSModel::setupModelData(const QString &root_path) {
     QDir root(root_path);
     m_root = new FSItem(QList<QVariant>({root.dirName(), "Size", "Date"}), root_path);
 
@@ -219,4 +216,30 @@ void DuplicateFSModel::makeItemsList(QList<FSItem *> &list, FSItem *root)
             makeItemsList(list, item);
         }
     }
+}
+
+int DuplicateFSModel::deleteDuplicates(FSItem *root) {
+    if (!root) {
+        root = m_root;
+    }
+    int deleted = 0;
+    int childCount = root->childCount();
+    for (int i = 0; i < childCount; ++i) {
+        FSItem *item = root->getChild(i);
+        if (!item->isDir()) {
+            if (item->duplicate()) {
+                emit layoutAboutToBeChanged();
+                deleted++;
+                root->deleteChild(i);
+                QFile::remove(item->path());
+                delete item;
+                childCount--;
+                i--;
+                emit layoutChanged();
+            }
+        } else {
+            deleted += deleteDuplicates(item);
+        }
+    }
+    return deleted;
 }
