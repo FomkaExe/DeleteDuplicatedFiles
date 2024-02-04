@@ -1,14 +1,15 @@
 #include "duplicatefsmodel.h"
 
 #include <QFile>
-#include <QDebug>
 #include <QDateTime>
-
 #include <algorithm>
 
-DuplicateFSModel::DuplicateFSModel(const QString& root_path, QObject *parent)
+DuplicateFSModel::DuplicateFSModel(const QString& root_path,
+                                   int filter,
+                                   QObject *parent)
     : QAbstractItemModel{parent}
     , m_item_counter(0) {
+    setFilter(filter);
     setupModelData(root_path);
     generateChildMD5(m_root);
 }
@@ -17,8 +18,9 @@ DuplicateFSModel::~DuplicateFSModel() {
     delete m_root;
 }
 
-QModelIndex DuplicateFSModel::index(int row, int column, const QModelIndex &parent) const {
-
+QModelIndex DuplicateFSModel::index(int row,
+                                    int column,
+                                    const QModelIndex &parent) const {
     if (!hasIndex(row, column, parent)) {
         return QModelIndex();
     }
@@ -74,7 +76,9 @@ QVariant DuplicateFSModel::data(const QModelIndex &index, int role) const {
     if (!index.isValid())
         return QVariant();
 
-    if (role != Qt::DisplayRole && role != Qt::BackgroundRole)
+    if (role != Qt::DisplayRole &&
+        role != Qt::BackgroundRole &&
+        role != Qt::DecorationRole)
         return QVariant();
 
     FSItem *item = static_cast<FSItem*>(index.internalPointer());
@@ -89,10 +93,34 @@ QVariant DuplicateFSModel::data(const QModelIndex &index, int role) const {
         }
     }
 
+    if (role == Qt::DecorationRole && index.column() == 0) {
+        switch (item->getFilter()) {
+        case FileType::FOLDER:
+            return QIcon(":/icons/folder");
+            break;
+        case FileType::IMAGE:
+            return QIcon(":/icons/image");
+            break;
+        case FileType::DOCUMENT:
+            return QIcon(":/icons/document");
+            break;
+        case FileType::MUSIC:
+            return QIcon(":/icons/music");
+            break;
+        case FileType::VIDEO:
+            return QIcon(":/icons/video");
+            break;
+        case FileType::ALL:
+            return QIcon(":/icons/file");
+            break;
+        }
+    }
+
     return QVariant();
 }
 
-QVariant DuplicateFSModel::headerData(int section, Qt::Orientation orientation,
+QVariant DuplicateFSModel::headerData(int section,
+                                      Qt::Orientation orientation,
                                       int role) const {
     if (orientation == Qt::Horizontal && role == Qt::DisplayRole) {
         switch (section) {
@@ -108,6 +136,11 @@ QVariant DuplicateFSModel::headerData(int section, Qt::Orientation orientation,
         }
     }
     return QVariant();
+}
+
+Qt::ItemFlags DuplicateFSModel::flags(const QModelIndex &index) const {
+    auto flags = QAbstractItemModel::flags(index);
+    return index.isValid() ? (flags &~ Qt::ItemIsSelectable) : flags;
 }
 
 QString DuplicateFSModel::getSize(quint64 size) {
@@ -180,6 +213,52 @@ void DuplicateFSModel::setupItemData(FSItem *parent, const QString &path) {
             continue;
         }
         bool isDir = current.isDir();
+        switch (m_filter) {
+        case TypeFilter::IMAGES:
+            if (!current.fileName().endsWith(".png") &&
+                !current.fileName().endsWith(".jpg") &&
+                !current.fileName().endsWith(".jpeg") &&
+                !current.fileName().endsWith(".gif") &&
+                !isDir) {
+                continue;
+            }
+            break;
+        case TypeFilter::DOCUMENTS:
+            if (!current.fileName().endsWith(".txt") &&
+                !current.fileName().endsWith(".doc") &&
+                !current.fileName().endsWith(".docx") &&
+                !current.fileName().endsWith(".html") &&
+                !current.fileName().endsWith(".htm") &&
+                !current.fileName().endsWith(".xls") &&
+                !current.fileName().endsWith(".xlsx") &&
+                !current.fileName().endsWith(".pdf") &&
+                !current.fileName().endsWith(".ppt") &&
+                !current.fileName().endsWith(".pptx") &&
+                !isDir) {
+                continue;
+            }
+            break;
+        case TypeFilter::MUSIC:
+            if (!current.fileName().endsWith(".mp3") &&
+                !current.fileName().endsWith(".wav") &&
+                !current.fileName().endsWith(".flac") &&
+                !current.fileName().endsWith(".midi") &&
+                !isDir) {
+                continue;
+            }
+            break;
+        case TypeFilter::VIDEOS:
+            if (!current.fileName().endsWith(".mp4") &&
+                !current.fileName().endsWith(".avi") &&
+                !current.fileName().endsWith(".mov") &&
+                !current.fileName().endsWith(".flv") &&
+                !isDir) {
+                continue;
+            }
+            break;
+        case TypeFilter::ALL:
+            break;
+        }
         QList<QVariant> childList = {current.baseName()};
         if (!isDir) {
             childList.append(getSize(current.size()));
@@ -190,7 +269,9 @@ void DuplicateFSModel::setupItemData(FSItem *parent, const QString &path) {
         if (isDir) {
             childList.append("");
         }
-        FSItem *child = new FSItem(childList, current.absoluteFilePath(), parent);
+        FSItem *child = new FSItem(childList,
+                                   current.absoluteFilePath(),
+                                   parent);
         parent->appendChild(child);
         ++m_item_counter;
         if (current.isDir()) {
@@ -201,13 +282,13 @@ void DuplicateFSModel::setupItemData(FSItem *parent, const QString &path) {
 
 void DuplicateFSModel::setupModelData(const QString &root_path) {
     QDir root(root_path);
-    m_root = new FSItem(QList<QVariant>({root.dirName(), "Size", "Date"}), root_path);
+    m_root = new FSItem(QList<QVariant>({root.dirName(), "Size", "Date"}),
+                        root_path);
 
     setupItemData(m_root, root_path);
 }
 
-void DuplicateFSModel::makeItemsList(QList<FSItem *> &list, FSItem *root)
-{
+void DuplicateFSModel::makeItemsList(QList<FSItem *> &list, FSItem *root) {
     for (int i = 0; i < root->childCount(); ++i) {
         FSItem *item = root->getChild(i);
         if (!item->isDir()) {
@@ -242,4 +323,24 @@ int DuplicateFSModel::deleteDuplicates(FSItem *root) {
         }
     }
     return deleted;
+}
+
+void DuplicateFSModel::setFilter(int filter) {
+    switch (filter) {
+    case 0:
+        m_filter = TypeFilter::ALL;
+        break;
+    case 1:
+        m_filter = TypeFilter::IMAGES;
+        break;
+    case 2:
+        m_filter = TypeFilter::DOCUMENTS;
+        break;
+    case 3:
+        m_filter = TypeFilter::MUSIC;
+        break;
+    case 4:
+        m_filter = TypeFilter::VIDEOS;
+        break;
+    }
 }

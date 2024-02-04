@@ -25,13 +25,6 @@
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="filterButton">
-        <property name="text">
-         <string>Filter</string>
-        </property>
-       </widget>
-      </item>
-      <item>
        <widget class="QComboBox" name="filesFormatComboBox">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Preferred" vsizetype="Minimum">

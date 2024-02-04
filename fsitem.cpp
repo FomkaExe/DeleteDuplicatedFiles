@@ -3,12 +3,52 @@
 #include <QVariant>
 #include <QCryptographicHash>
 #include <QFileInfo>
-#include <QDebug>
 
-FSItem::FSItem(const QList<QVariant> &data, const QString &path, FSItem *parentItem)
-    : m_itemData(data), m_path(path),m_hash(nullptr), m_duplicate(false), m_isDir(false), m_parentItem(parentItem) {
+FSItem::FSItem(const QList<QVariant> &data,
+               const QString &path,
+               FSItem *parentItem)
+    : m_itemData(data)
+    , m_path(path)
+    , m_hash(nullptr)
+    , m_duplicate(false)
+    , m_isDir(false)
+    , m_parentItem(parentItem)
+    , m_fileType(FileType::ALL) {
     QFileInfo info(path);
     m_isDir = info.isDir();
+    if (info.isDir()) {
+        m_fileType = FileType::FOLDER;
+    }
+    if (info.suffix() == "png" ||
+        info.suffix() == "jpg" ||
+        info.suffix() == "jpeg" ||
+        info.suffix() == "gif") {
+        m_fileType = FileType::IMAGE;
+    }
+    if (info.suffix() == "txt" ||
+        info.suffix() == "doc" ||
+        info.suffix() == "docx" ||
+        info.suffix() == "html" ||
+        info.suffix() == "htm" ||
+        info.suffix() == "xls" ||
+        info.suffix() == "xlsx" ||
+        info.suffix() == "pdf" ||
+        info.suffix() == "ppt" ||
+        info.suffix() == "pptx") {
+        m_fileType = FileType::DOCUMENT;
+    }
+    if (info.suffix() == "mp3" ||
+        info.suffix() == "wav" ||
+        info.suffix() == "flac" ||
+        info.suffix() == "midi") {
+        m_fileType = FileType::MUSIC;
+    }
+    if (info.suffix() == "mp4" ||
+        info.suffix() == "avi" ||
+        info.suffix() == "mov" ||
+        info.suffix() == "flv") {
+        m_fileType = FileType::VIDEO;
+    }
 }
 
 FSItem::~FSItem() {
@@ -85,5 +125,9 @@ bool FSItem::duplicate() const {
 
 void FSItem::setDuplicate(bool duplicate) {
     m_duplicate = duplicate;
+}
+
+FileType FSItem::getFilter() {
+    return m_fileType;
 }
 

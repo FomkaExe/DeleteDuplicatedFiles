@@ -5,7 +5,6 @@
 #include <QFileSystemModel>
 #include <QFileDialog>
 #include <QTreeView>
-#include <QDebug>
 #include <QMessageBox>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -15,14 +14,20 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     this->setWindowTitle("Delete duplicated files");
 
-    QStringList comboBoxItemsList = { "All", "Images", "Documents", "Music",
-                                      "Videos", "Archives", "Executables" };
+    QStringList comboBoxItemsList = { "All", "Images", "Documents",
+                                      "Music", "Videos" };
     ui->filesFormatComboBox->addItems(comboBoxItemsList);
 
-    connect(ui->openButton, SIGNAL(clicked()), this, SLOT(openFolderButtonSlot()));
-    connect(ui->searchButton, SIGNAL(clicked()), this, SLOT(searchDuplicatesButtonSlot()));
-    connect(ui->deleteButton, SIGNAL(clicked()), this, SLOT(deleteDuplicatesButtonSlot()));
-    connect(ui->actionAbout_Qt, SIGNAL(triggered()), this, SLOT(actionAboutQtSlot()));
+    connect(ui->openButton, SIGNAL(clicked()),
+            this, SLOT(openFolderButtonSlot()));
+    connect(ui->searchButton, SIGNAL(clicked()),
+            this, SLOT(searchDuplicatesButtonSlot()));
+    connect(ui->deleteButton, SIGNAL(clicked()),
+            this, SLOT(deleteDuplicatesButtonSlot()));
+    connect(ui->actionAbout_Qt, SIGNAL(triggered()),
+            this, SLOT(actionAboutQtSlot()));
+    connect(ui->filesFormatComboBox, SIGNAL(activated(int)),
+            this, SLOT(fileFormatComboBoxActivated(int)));
 }
 
 MainWindow::~MainWindow() {
@@ -31,23 +36,28 @@ MainWindow::~MainWindow() {
 }
 
 void MainWindow::openFolderButtonSlot() {
-    QString path = QFileDialog::getExistingDirectory(this, tr("Open directory"),
-                                                    "/home", QFileDialog::ShowDirsOnly);
-    if (!path.isEmpty()) {
+    m_path = QFileDialog::getExistingDirectory(this,
+                                                     tr("Open directory"),
+                                                    "/home",
+                                                     QFileDialog::ShowDirsOnly);
+    if (!m_path.isEmpty()) {
         if (model) {
             delete model;
         }
-        model = new DuplicateFSModel(path, this);
+        model = new DuplicateFSModel(m_path);
         ui->treeView->setModel(model);
-        ui->treeView->setColumnWidth(0, ui->treeView->width()/3);
-        ui->treeView->setColumnWidth(1, ui->treeView->width()/6);
+        QHeaderView* header = ui->treeView->header();
+        header->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+        header->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+        header->setSectionResizeMode(2, QHeaderView::ResizeToContents);
     }
 }
 
 void MainWindow::searchDuplicatesButtonSlot() {
     if (!model) {
         QMessageBox msgbox;
-        msgbox.setText("Please select folder to search duplicates in");
+        msgbox.setWindowTitle("Error");
+        msgbox.setText("Please select a folder to search for duplicates in");
         msgbox.exec();
         return;
     }
@@ -56,10 +66,14 @@ void MainWindow::searchDuplicatesButtonSlot() {
 
 void MainWindow::deleteDuplicatesButtonSlot() {
     if (!model) {
+        QMessageBox msgbox;
+        msgbox.setWindowTitle("Error");
+        msgbox.setText("Please set filter and search "
+                       "for duplicates in a selected folder");
+        msgbox.exec();
         return;
     }
     int deletedFilesAmount = model->deleteDuplicates();
-    qDebug() << deletedFilesAmount;
     QMessageBox msgbox;
     msgbox.setText(QString("Deleted %1 files").arg(deletedFilesAmount));
     msgbox.exec();
@@ -69,3 +83,16 @@ void MainWindow::actionAboutQtSlot() {
     QMessageBox::aboutQt(this);
 }
 
+void MainWindow::fileFormatComboBoxActivated(int index) {
+    if (!model) {
+        QMessageBox msgbox;
+        msgbox.setWindowTitle("Error");
+        msgbox.setText("Please select a folder to search for duplicates in");
+        msgbox.exec();
+        return;
+    }
+    delete model;
+    model = new DuplicateFSModel(m_path,
+                                 index);
+    ui->treeView->setModel(model);
+}

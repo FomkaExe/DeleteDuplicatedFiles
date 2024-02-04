@@ -24,9 +24,11 @@ public slots:
     void searchDuplicatesButtonSlot();
     void deleteDuplicatesButtonSlot();
     void actionAboutQtSlot();
+    void fileFormatComboBoxActivated(int index);
 
 private:
     Ui::MainWindow *ui;
     DuplicateFSModel *model;
+    QString m_path;
 };
 #endif // MAINWINDOW_H

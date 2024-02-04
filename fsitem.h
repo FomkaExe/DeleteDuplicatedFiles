@@ -1,13 +1,24 @@
-#ifndef FSITEM_H
+﻿#ifndef FSITEM_H
 #define FSITEM_H
 
 #include <QList>
 
 class QVariant;
 
+enum class FileType {
+    ALL,
+    IMAGE,
+    DOCUMENT,
+    MUSIC,
+    VIDEO,
+    FOLDER
+};
+
 class FSItem {
 public:
-    explicit FSItem(const QList<QVariant> &data, const QString &path, FSItem *parentItem = nullptr);
+    explicit FSItem(const QList<QVariant> &data,
+                    const QString &path,
+                    FSItem *parentItem = nullptr);
     ~FSItem();
 
     void appendChild(FSItem *child);
@@ -25,6 +36,7 @@ public:
     QString path() const;
     bool duplicate() const;
     void setDuplicate(bool duplicate);
+    FileType getFilter();
 
 private:
     QList<FSItem *> m_childItems;
@@ -34,6 +46,7 @@ private:
     bool m_duplicate;
     bool m_isDir;
     FSItem *m_parentItem;
+    FileType m_fileType;
 };
 
 #endif // FSITEM_H
