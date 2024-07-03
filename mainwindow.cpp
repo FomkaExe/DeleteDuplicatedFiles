@@ -20,12 +20,16 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->openButton, SIGNAL(clicked()),
             this, SLOT(openFolderButtonSlot()));
+
     connect(ui->searchButton, SIGNAL(clicked()),
             this, SLOT(searchDuplicatesButtonSlot()));
+
     connect(ui->deleteButton, SIGNAL(clicked()),
             this, SLOT(deleteDuplicatesButtonSlot()));
+
     connect(ui->actionAbout_Qt, SIGNAL(triggered()),
             this, SLOT(actionAboutQtSlot()));
+
     connect(ui->filesFormatComboBox, SIGNAL(activated(int)),
             this, SLOT(fileFormatComboBoxActivated(int)));
 }
@@ -37,9 +41,9 @@ MainWindow::~MainWindow() {
 
 void MainWindow::openFolderButtonSlot() {
     m_path = QFileDialog::getExistingDirectory(this,
-                                                     tr("Open directory"),
-                                                    "/home",
-                                                     QFileDialog::ShowDirsOnly);
+                                               tr("Open directory"),
+                                               "/home",
+                                               QFileDialog::ShowDirsOnly);
     if (!m_path.isEmpty()) {
         if (model) {
             delete model;
