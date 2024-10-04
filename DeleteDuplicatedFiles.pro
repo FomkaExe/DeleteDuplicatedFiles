@@ -11,16 +11,16 @@ UI_DIR =      .build
 RCC_DIR =     .build
 OBJECTS_DIR = .build
 
-SOURCES += duplicatefsmodel.cpp \
-           fsitem.cpp \
-           main.cpp \
-           mainwindow.cpp
+SOURCES += src/duplicatefsmodel.cpp \
+           src/fsitem.cpp \
+           src/main.cpp \
+           src/mainwindow.cpp
 
-HEADERS += duplicatefsmodel.h \
-           fsitem.h \
-           mainwindow.h
+HEADERS += src/duplicatefsmodel.h \
+           src/fsitem.h \
+           src/mainwindow.h
 
-FORMS += mainwindow.ui
+FORMS += src/mainwindow.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
