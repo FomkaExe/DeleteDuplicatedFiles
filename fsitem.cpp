@@ -6,14 +6,14 @@
 
 FSItem::FSItem(const QList<QVariant> &data,
                const QString &path,
-               FSItem *parentItem)
-    : m_itemData(data)
-    , m_path(path)
-    , m_hash(nullptr)
-    , m_duplicate(false)
-    , m_isDir(false)
-    , m_parentItem(parentItem)
-    , m_fileType(FileType::ALL) {
+               FSItem *parentItem) :
+    m_itemData(data),
+    m_path(path),
+    m_hash(nullptr),
+    m_duplicate(false),
+    m_isDir(false),
+    m_parentItem(parentItem),
+    m_fileType(FileType::ALL) {
     QFileInfo info(path);
     m_isDir = info.isDir();
     if (info.isDir()) {
@@ -49,6 +49,7 @@ FSItem::FSItem(const QList<QVariant> &data,
         info.suffix() == "flv") {
         m_fileType = FileType::VIDEO;
     }
+    generateMD5();
 }
 
 FSItem::~FSItem() {
@@ -63,7 +64,7 @@ void FSItem::deleteChild(int index) {
     m_childItems.removeAt(index);
 }
 
-FSItem *FSItem::getChild(int row) const{
+FSItem *FSItem::child(int row) const{
     if (row < 0 || row >= m_childItems.size()) {
         return nullptr;
     }
@@ -85,14 +86,14 @@ QVariant FSItem::data(int column) const {
     return m_itemData.at(column);
 }
 
-int FSItem::getItemRow() const {
+int FSItem::itemRow() const {
     if (m_parentItem) {
         return m_parentItem->m_childItems.indexOf(const_cast<FSItem *>(this));
     }
     return 0;
 }
 
-FSItem *FSItem::getItemParent() const {
+FSItem *FSItem::parent() const {
     return m_parentItem;
 }
 
@@ -111,7 +112,7 @@ bool FSItem::isDir() const {
     return m_isDir;
 }
 
-QByteArray FSItem::getHash() const {
+QByteArray FSItem::hash() const {
     return m_hash;
 }
 
@@ -119,7 +120,7 @@ QString FSItem::path() const {
     return m_path;
 }
 
-bool FSItem::duplicate() const {
+bool FSItem::isDuplicate() const {
     return m_duplicate;
 }
 

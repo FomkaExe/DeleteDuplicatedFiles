@@ -6,37 +6,47 @@
 #include <QFileDialog>
 #include <QTreeView>
 #include <QMessageBox>
+#include <QItemSelectionModel>
+#include <QMenu>
+#include <QGraphicsScene>
+#include <QGraphicsView>
 
-MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
-    , model(nullptr) {
-    ui->setupUi(this);
+MainWindow::MainWindow(QWidget *parent) :
+    QMainWindow(parent),
+    m_ui(new Ui::MainWindow),
+    m_model(nullptr),
+    m_contextMenu(new QMenu()),
+    m_actionOpen(new QAction("Open")) {
+    m_ui->setupUi(this);
     this->setWindowTitle("Delete duplicated files");
+
+    m_contextMenu->addAction(m_actionOpen);
 
     QStringList comboBoxItemsList = { "All", "Images", "Documents",
                                       "Music", "Videos" };
-    ui->filesFormatComboBox->addItems(comboBoxItemsList);
+    m_ui->filesFormatComboBox->addItems(comboBoxItemsList);
 
-    connect(ui->openButton, SIGNAL(clicked()),
+    connect(m_actionOpen, SIGNAL(triggered()),
+            this, SLOT(menuActionOpen()));
+
+    connect(m_ui->openButton, SIGNAL(clicked()),
             this, SLOT(openFolderButtonSlot()));
 
-    connect(ui->searchButton, SIGNAL(clicked()),
-            this, SLOT(searchDuplicatesButtonSlot()));
-
-    connect(ui->deleteButton, SIGNAL(clicked()),
+    connect(m_ui->deleteButton, SIGNAL(clicked()),
             this, SLOT(deleteDuplicatesButtonSlot()));
 
-    connect(ui->actionAbout_Qt, SIGNAL(triggered()),
+    connect(m_ui->actionAbout_Qt, SIGNAL(triggered()),
             this, SLOT(actionAboutQtSlot()));
 
-    connect(ui->filesFormatComboBox, SIGNAL(activated(int)),
+    connect(m_ui->filesFormatComboBox, SIGNAL(activated(int)),
             this, SLOT(fileFormatComboBoxActivated(int)));
 }
 
 MainWindow::~MainWindow() {
-    delete ui;
-    delete model;
+    delete m_actionOpen;
+    delete m_contextMenu;
+    delete m_model;
+    delete m_ui;
 }
 
 void MainWindow::openFolderButtonSlot() {
@@ -45,42 +55,44 @@ void MainWindow::openFolderButtonSlot() {
                                                "/home",
                                                QFileDialog::ShowDirsOnly);
     if (!m_path.isEmpty()) {
-        if (model) {
-            delete model;
+        if (m_model) {
+            delete m_model;
         }
-        model = new DuplicateFSModel(m_path);
-        ui->treeView->setModel(model);
-        QHeaderView* header = ui->treeView->header();
+        setEnabled(false);
+        QApplication::setOverrideCursor(Qt::WaitCursor);
+
+        m_model = new DuplicateFSModel(m_path);
+
+        m_ui->treeView->setModel(m_model);
+        m_ui->treeView->setSelectionBehavior(QAbstractItemView::SelectRows);
+        m_ui->treeView->setContextMenuPolicy(Qt::CustomContextMenu);
+        connect(m_ui->treeView, SIGNAL(customContextMenuRequested(const QPoint &)),
+                this, SLOT(onContextMenuRequest(const QPoint &)));
+
+        QHeaderView* header = m_ui->treeView->header();
         header->setSectionResizeMode(0, QHeaderView::ResizeToContents);
         header->setSectionResizeMode(1, QHeaderView::ResizeToContents);
         header->setSectionResizeMode(2, QHeaderView::ResizeToContents);
     }
-}
-
-void MainWindow::searchDuplicatesButtonSlot() {
-    if (!model) {
-        QMessageBox msgbox;
-        msgbox.setWindowTitle("Error");
-        msgbox.setText("Please select a folder to search for duplicates in");
-        msgbox.exec();
-        return;
-    }
-    model->findDuplicates();
+    QApplication::restoreOverrideCursor();
+    setEnabled(true);
 }
 
 void MainWindow::deleteDuplicatesButtonSlot() {
-    if (!model) {
-        QMessageBox msgbox;
-        msgbox.setWindowTitle("Error");
-        msgbox.setText("Please set filter and search "
-                       "for duplicates in a selected folder");
-        msgbox.exec();
+    if (!m_model) {
         return;
     }
-    int deletedFilesAmount = model->deleteDuplicates();
-    QMessageBox msgbox;
-    msgbox.setText(QString("Deleted %1 files").arg(deletedFilesAmount));
-    msgbox.exec();
+    auto choice =
+            QMessageBox::warning(this,
+                                 "Confirm",
+                                 "Are you sure you want to delete duplicate files?",
+                                 QMessageBox::Ok | QMessageBox::Cancel);
+    if (choice == QMessageBox::Ok) {
+        int deletedFilesAmount = m_model->deleteDuplicates();
+        QMessageBox::information(this,
+                                 "Success",
+                                 QString("Deleted %1 files").arg(deletedFilesAmount));
+    }
 }
 
 void MainWindow::actionAboutQtSlot() {
@@ -88,15 +100,45 @@ void MainWindow::actionAboutQtSlot() {
 }
 
 void MainWindow::fileFormatComboBoxActivated(int index) {
-    if (!model) {
-        QMessageBox msgbox;
-        msgbox.setWindowTitle("Error");
-        msgbox.setText("Please select a folder to search for duplicates in");
-        msgbox.exec();
+    if (!m_model) {
         return;
     }
-    delete model;
-    model = new DuplicateFSModel(m_path,
-                                 index);
-    ui->treeView->setModel(model);
+    delete m_model;
+    m_model = new DuplicateFSModel(m_path,
+                                   index);
+    m_ui->treeView->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_ui->treeView->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(m_ui->treeView, SIGNAL(customContextMenuRequested(const QPoint &)),
+            this, SLOT(onContextMenuRequest(const QPoint &)));
+
+    m_ui->treeView->setModel(m_model);
+
+}
+
+void MainWindow::onContextMenuRequest(const QPoint& point) {
+    QModelIndex index = m_ui->treeView->indexAt(point);
+    if (index.isValid() && m_model->isImage(index)) {
+        m_contextMenu->exec(m_ui->treeView->viewport()->mapToGlobal(point));
+    }
+}
+
+void MainWindow::menuActionOpen() {
+    QModelIndex index = m_ui->treeView->currentIndex();
+    QString path = m_model->path(index);
+    QImage img(path);
+    if (img.size().width() > size().width()) {
+        img = img.scaledToWidth(size().width() - 50);
+    }
+    if (img.size().height() > size().height()) {
+        img = img.scaledToHeight(size().height() - 50);
+    }
+
+    QGraphicsScene *scene = new QGraphicsScene(this);
+    scene->addPixmap(QPixmap::fromImage(img));
+    QGraphicsView *view = new QGraphicsView(scene);
+    view->setWindowTitle(path);
+    view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    view->resize(img.size().width() + 5, img.size().height() + 5);
+    view->show();
 }

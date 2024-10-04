@@ -21,14 +21,17 @@ public:
 
 public slots:
     void openFolderButtonSlot();
-    void searchDuplicatesButtonSlot();
     void deleteDuplicatesButtonSlot();
     void actionAboutQtSlot();
     void fileFormatComboBoxActivated(int index);
+    void onContextMenuRequest(const QPoint &point);
+    void menuActionOpen();
 
 private:
-    Ui::MainWindow *ui;
-    DuplicateFSModel *model;
+    Ui::MainWindow *m_ui;
+    DuplicateFSModel *m_model;
+    QMenu *m_contextMenu;
+    QAction *m_actionOpen;
     QString m_path;
 };
 #endif // MAINWINDOW_H

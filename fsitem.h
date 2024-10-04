@@ -24,17 +24,17 @@ public:
     void appendChild(FSItem *child);
     void deleteChild(int index);
 
-    FSItem *getChild(int row) const;
+    FSItem *child(int row) const;
     int childCount() const;
     int columnCount() const;
     QVariant data(int column) const;
-    int getItemRow() const;
-    FSItem *getItemParent() const;
+    int itemRow() const;
+    FSItem *parent() const;
     void generateMD5();
     bool isDir() const;
-    QByteArray getHash() const;
+    QByteArray hash() const;
     QString path() const;
-    bool duplicate() const;
+    bool isDuplicate() const;
     void setDuplicate(bool duplicate);
     FileType getFilter();
 

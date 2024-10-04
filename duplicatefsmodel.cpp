@@ -6,12 +6,12 @@
 
 DuplicateFSModel::DuplicateFSModel(const QString& root_path,
                                    int filter,
-                                   QObject *parent)
-    : QAbstractItemModel{parent}
-    , m_item_counter(0) {
+                                   QObject *parent) :
+    QAbstractItemModel{parent},
+    m_item_counter(0) {
     setFilter(filter);
     setupModelData(root_path);
-    generateChildMD5(m_root);
+    searchDuplicates();
 }
 
 DuplicateFSModel::~DuplicateFSModel() {
@@ -33,7 +33,7 @@ QModelIndex DuplicateFSModel::index(int row,
         parentItem = static_cast<FSItem*>(parent.internalPointer());
     }
 
-    FSItem *childItem = parentItem->getChild(row);
+    FSItem *childItem = parentItem->child(row);
     if (childItem) {
         return createIndex(row, column, childItem);
     }
@@ -45,12 +45,12 @@ QModelIndex DuplicateFSModel::parent(const QModelIndex &index) const {
         return QModelIndex();
 
     FSItem *childItem = static_cast<FSItem*>(index.internalPointer());
-    FSItem *parentItem = childItem->getItemParent();
+    FSItem *parentItem = childItem->parent();
 
     if (parentItem == m_root)
         return QModelIndex();
 
-    return createIndex(parentItem->getItemRow(), 0, parentItem);
+    return createIndex(parentItem->itemRow(), 0, parentItem);
 }
 
 int DuplicateFSModel::rowCount(const QModelIndex &parent) const {
@@ -85,8 +85,13 @@ QVariant DuplicateFSModel::data(const QModelIndex &index, int role) const {
 
     if (role == Qt::DisplayRole) {
         return item->data(index.column());
-    } else if (role == Qt::BackgroundRole) {
-        if (item->duplicate()) {
+    }
+
+    if (role == Qt::BackgroundRole) {
+        if (item->isDuplicate()) {
+            if (item->isDir()) {
+                return QColor(Qt::GlobalColor::yellow);
+            }
             return QColor(Qt::GlobalColor::red);
         } else {
             return QVariant();
@@ -140,67 +145,29 @@ QVariant DuplicateFSModel::headerData(int section,
 
 Qt::ItemFlags DuplicateFSModel::flags(const QModelIndex &index) const {
     auto flags = QAbstractItemModel::flags(index);
-    return index.isValid() ? (flags &~ Qt::ItemIsSelectable) : flags;
+    return flags;
 }
 
-QString DuplicateFSModel::getSize(quint64 size) {
-    QString newSize;
-    if (size > 1000000000) {
-        newSize.append(QString::number(size/1000000000));
-        size %= 1000000000;
-        newSize.append(",");
-        newSize.append(QString::number(size/100000000));
-        newSize.append(" GB");
-        return newSize;
-    } else if (size > 1000000) {
-        newSize.append(QString::number(size/1000000));
-        newSize.append(",");
-        size %= 1000000;
-        newSize.append(QString::number(size/100000));
-        newSize.append(" MB");
-    } else if (size > 1000) {
-        newSize.append(QString::number(size/1000));
-        newSize.append(",");
-        size %= 1000;
-        newSize.append(QString::number(size/100));
-        newSize.append(" KB");
-    } else {
-        newSize.append(QString::number(size));
-        newSize.append(" B");
-    }
-    return newSize;
-}
-
-void DuplicateFSModel::generateChildMD5(FSItem *parent) {
-    for (int i = 0; i < parent->childCount(); ++i) {
-        FSItem *item = parent->getChild(i);
-        if (!item->isDir()) {
-            item->generateMD5();
-        } else {
-            generateChildMD5(item);
-        }
-    }
-}
-
-uint64_t DuplicateFSModel::getItemCount() {
-    return m_item_counter;
-}
-
-void DuplicateFSModel::findDuplicates() {
-    layoutAboutToBeChanged();
+void DuplicateFSModel::searchDuplicates() {
+    emit layoutAboutToBeChanged();
 
     QList<FSItem *> list;
     makeItemsList(list, m_root);
     std::sort(list.begin(), list.end(), [](FSItem *a, FSItem *b)
                                         {
-                                            return a->getHash() > b->getHash();
+                                            return a->hash() > b->hash();
                                         });
     for (int i = 0; i < list.size() - 1; ++i) {
-        if (list[i]->getHash() == list[i+1]->getHash()) {
+        if (list[i]->hash() == list[i+1]->hash()) {
             list[i+1]->setDuplicate(true);
+            FSItem* parent = list[i+1]->parent();
+            while (parent) {
+                parent->setDuplicate(true);
+                parent = parent->parent();
+            }
         }
     }
-    layoutChanged();
+    emit layoutChanged();
 }
 
 void DuplicateFSModel::setupItemData(FSItem *parent, const QString &path) {
@@ -261,7 +228,7 @@ void DuplicateFSModel::setupItemData(FSItem *parent, const QString &path) {
         }
         QList<QVariant> childList = {current.baseName()};
         if (!isDir) {
-            childList.append(getSize(current.size()));
+            childList.append(size(current.size()));
         } else {
             childList.append("");
         }
@@ -290,7 +257,7 @@ void DuplicateFSModel::setupModelData(const QString &root_path) {
 
 void DuplicateFSModel::makeItemsList(QList<FSItem *> &list, FSItem *root) {
     for (int i = 0; i < root->childCount(); ++i) {
-        FSItem *item = root->getChild(i);
+        FSItem *item = root->child(i);
         if (!item->isDir()) {
             list.append(item);
         } else {
@@ -306,9 +273,9 @@ int DuplicateFSModel::deleteDuplicates(FSItem *root) {
     int deleted = 0;
     int childCount = root->childCount();
     for (int i = 0; i < childCount; ++i) {
-        FSItem *item = root->getChild(i);
+        FSItem *item = root->child(i);
         if (!item->isDir()) {
-            if (item->duplicate()) {
+            if (item->isDuplicate()) {
                 emit layoutAboutToBeChanged();
                 deleted++;
                 root->deleteChild(i);
@@ -343,4 +310,49 @@ void DuplicateFSModel::setFilter(int filter) {
         m_filter = TypeFilter::VIDEOS;
         break;
     }
+}
+
+bool DuplicateFSModel::isImage(const QModelIndex& index) {
+    FSItem *item = static_cast<FSItem*>(index.internalPointer());
+    if (item->getFilter() == FileType::IMAGE) {
+        return true;
+    }
+    return false;
+}
+
+QString DuplicateFSModel::path(const QModelIndex &index) {
+    FSItem *item = static_cast<FSItem*>(index.internalPointer());
+    return item->path();
+}
+
+QString DuplicateFSModel::size(quint64 size) {
+    QString newSize;
+    if (size > 1000000000) {
+        newSize.append(QString::number(size/1000000000));
+        size %= 1000000000;
+        newSize.append(",");
+        newSize.append(QString::number(size/100000000));
+        newSize.append(" GB");
+        return newSize;
+    } else if (size > 1000000) {
+        newSize.append(QString::number(size/1000000));
+        newSize.append(",");
+        size %= 1000000;
+        newSize.append(QString::number(size/100000));
+        newSize.append(" MB");
+    } else if (size > 1000) {
+        newSize.append(QString::number(size/1000));
+        newSize.append(",");
+        size %= 1000;
+        newSize.append(QString::number(size/100));
+        newSize.append(" KB");
+    } else {
+        newSize.append(QString::number(size));
+        newSize.append(" B");
+    }
+    return newSize;
+}
+
+uint64_t DuplicateFSModel::count() {
+    return m_item_counter;
 }
