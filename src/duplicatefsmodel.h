@@ -34,6 +34,7 @@ public:
 public:
     void searchDuplicates();
     int deleteDuplicates(FSItem *root = nullptr);
+    int getFilter();
     void setFilter(int filter);
     bool isImage(const QModelIndex &index);
     QString path(const QModelIndex &index);

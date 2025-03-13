@@ -23,15 +23,34 @@ public slots:
     void openFolderButtonSlot();
     void deleteDuplicatesButtonSlot();
     void actionAboutQtSlot();
-    void fileFormatComboBoxActivated(int index);
+    void refreshModel(int index);
     void onContextMenuRequest(const QPoint &point);
-    void menuActionOpen();
+    void actionContextOpenTriggered();
+    void actionContextDeleteTriggered();
+    void openUrl(const QString& url);
 
 private:
     Ui::MainWindow *m_ui;
     DuplicateFSModel *m_model;
-    QMenu *m_contextMenu;
-    QAction *m_actionOpen;
     QString m_path;
+
+    QMenu *m_contextMenu;
+    QAction *m_contextOpen;
+    QAction *m_contextDelete;
+
+    QMenu *m_fileMenu;
+    QMenu *m_filterMenu;
+    QMenu *m_aboutMenu;
+
+    QAction *m_actionOpen;
+    QAction *m_actionDeleteDuplicates;
+    QAction *m_actionExit;
+    QAction *m_actionAboutQt;
+
+    QAction *m_filterALL;
+    QAction *m_filterIMAGES;
+    QAction *m_filterDOCUMENTS;
+    QAction *m_filterMUSIC;
+    QAction *m_filterVIDEOS;
 };
 #endif // MAINWINDOW_H

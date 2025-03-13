@@ -292,6 +292,10 @@ int DuplicateFSModel::deleteDuplicates(FSItem *root) {
     return deleted;
 }
 
+int DuplicateFSModel::getFilter() {
+    return static_cast<int>(m_filter);
+}
+
 void DuplicateFSModel::setFilter(int filter) {
     switch (filter) {
     case 0:

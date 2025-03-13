@@ -10,40 +10,103 @@
 #include <QMenu>
 #include <QGraphicsScene>
 #include <QGraphicsView>
+#include <QDesktopServices>
+#include <QProcess>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     m_ui(new Ui::MainWindow),
     m_model(nullptr),
     m_contextMenu(new QMenu()),
-    m_actionOpen(new QAction("Open")) {
+    m_contextOpen(new QAction("Open")),
+    m_contextDelete(new QAction("Delete")),
+    m_fileMenu(new QMenu("File")),
+    m_filterMenu(new QMenu("Filter")),
+    m_aboutMenu(new QMenu("About")),
+    m_actionOpen(new QAction("Open")),
+    m_actionDeleteDuplicates(new QAction("Delete Duplicates")),
+    m_actionExit(new QAction("Exit")),
+    m_actionAboutQt(new QAction("About Qt")),
+    m_filterALL(new QAction("All")),
+    m_filterIMAGES(new QAction("Images")),
+    m_filterDOCUMENTS(new QAction("Documents")),
+    m_filterMUSIC(new QAction("Music")),
+    m_filterVIDEOS(new QAction("Videos")) {
+    /* mainwindow init */
     m_ui->setupUi(this);
     this->setWindowTitle("Delete duplicated files");
 
-    m_contextMenu->addAction(m_actionOpen);
-
+    /* Combo Box init */
     QStringList comboBoxItemsList = { "All", "Images", "Documents",
-                                      "Music", "Videos" };
+                                     "Music", "Videos" };
     m_ui->filesFormatComboBox->addItems(comboBoxItemsList);
 
-    connect(m_actionOpen, SIGNAL(triggered()),
-            this, SLOT(menuActionOpen()));
+    /* Context menu init */
+    m_contextMenu->addAction(m_contextOpen);
+    m_contextMenu->addAction(m_contextDelete);
+    connect(m_contextOpen, SIGNAL(triggered()),
+            this, SLOT(actionContextOpenTriggered()));
+    connect(m_contextDelete, SIGNAL(triggered()),
+            this, SLOT(actionContextDeleteTriggered()));
 
-    connect(m_ui->openButton, SIGNAL(clicked()),
-            this, SLOT(openFolderButtonSlot()));
+    /* Menu bar init */
+    m_ui->menubar->addMenu(m_fileMenu);
+    m_fileMenu->addAction(m_actionOpen);
+    m_fileMenu->addMenu(m_filterMenu);
+    m_filterMenu->addAction(m_filterALL);
+    m_filterMenu->addAction(m_filterIMAGES);
+    m_filterMenu->addAction(m_filterDOCUMENTS);
+    m_filterMenu->addAction(m_filterMUSIC);
+    m_filterMenu->addAction(m_filterVIDEOS);
+    m_fileMenu->addAction(m_actionDeleteDuplicates);
+    m_fileMenu->addAction(m_actionExit);
+    m_ui->menubar->addMenu(m_aboutMenu);
+    m_aboutMenu->addAction(m_actionAboutQt);
 
-    connect(m_ui->deleteButton, SIGNAL(clicked()),
-            this, SLOT(deleteDuplicatesButtonSlot()));
 
-    connect(m_ui->actionAbout_Qt, SIGNAL(triggered()),
-            this, SLOT(actionAboutQtSlot()));
+    connect(m_actionOpen, &QAction::triggered,
+            this, &MainWindow::openFolderButtonSlot);
+    connect(m_ui->openButton, &QPushButton::clicked,
+            this, &MainWindow::openFolderButtonSlot);
 
+    connect(m_filterALL, &QAction::triggered,
+            this, [this]() {refreshModel(0);});
+    connect(m_filterIMAGES, &QAction::triggered,
+            this, [this]() {refreshModel(1);});
+    connect(m_filterDOCUMENTS, &QAction::triggered,
+            this, [this]() {refreshModel(2);});
+    connect(m_filterMUSIC, &QAction::triggered,
+            this, [this]() {refreshModel(3);});
+    connect(m_filterVIDEOS, &QAction::triggered,
+            this, [this]() {refreshModel(4);});
     connect(m_ui->filesFormatComboBox, SIGNAL(activated(int)),
-            this, SLOT(fileFormatComboBoxActivated(int)));
+            this, SLOT(refreshModel(int)));
+
+    connect(m_actionDeleteDuplicates, &QAction::triggered,
+            this, &MainWindow::deleteDuplicatesButtonSlot);
+    connect(m_ui->deleteButton, &QPushButton::clicked,
+            this, &MainWindow::deleteDuplicatesButtonSlot);
+    connect(m_actionExit, &QAction::triggered,
+            this, []() {QCoreApplication::quit();});
+    connect(m_actionAboutQt, &QAction::triggered,
+            this, &MainWindow::actionAboutQtSlot);
 }
 
 MainWindow::~MainWindow() {
+    delete m_filterVIDEOS;
+    delete m_filterMUSIC;
+    delete m_filterDOCUMENTS;
+    delete m_filterIMAGES;
+    delete m_filterALL;
+    delete m_actionAboutQt;
+    delete m_actionExit;
+    delete m_actionDeleteDuplicates;
     delete m_actionOpen;
+    delete m_aboutMenu;
+    delete m_filterMenu;
+    delete m_fileMenu;
+    delete m_contextDelete;
+    delete m_contextOpen;
     delete m_contextMenu;
     delete m_model;
     delete m_ui;
@@ -99,7 +162,7 @@ void MainWindow::actionAboutQtSlot() {
     QMessageBox::aboutQt(this);
 }
 
-void MainWindow::fileFormatComboBoxActivated(int index) {
+void MainWindow::refreshModel(int index) {
     if (!m_model) {
         return;
     }
@@ -113,32 +176,55 @@ void MainWindow::fileFormatComboBoxActivated(int index) {
 
     m_ui->treeView->setModel(m_model);
 
+    if (m_ui->filesFormatComboBox->currentIndex() != index) {
+        m_ui->filesFormatComboBox->setCurrentIndex(index);
+    }
 }
 
 void MainWindow::onContextMenuRequest(const QPoint& point) {
     QModelIndex index = m_ui->treeView->indexAt(point);
-    if (index.isValid() && m_model->isImage(index)) {
+    if (index.isValid()) {
         m_contextMenu->exec(m_ui->treeView->viewport()->mapToGlobal(point));
     }
 }
 
-void MainWindow::menuActionOpen() {
+void MainWindow::actionContextOpenTriggered() {
     QModelIndex index = m_ui->treeView->currentIndex();
     QString path = m_model->path(index);
-    QImage img(path);
-    if (img.size().width() > size().width()) {
-        img = img.scaledToWidth(size().width() - 50);
-    }
-    if (img.size().height() > size().height()) {
-        img = img.scaledToHeight(size().height() - 50);
-    }
+    QUrl fileUrl = QUrl::fromLocalFile(path);
 
-    QGraphicsScene *scene = new QGraphicsScene(this);
-    scene->addPixmap(QPixmap::fromImage(img));
-    QGraphicsView *view = new QGraphicsView(scene);
-    view->setWindowTitle(path);
-    view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    view->resize(img.size().width() + 5, img.size().height() + 5);
-    view->show();
+    if (!QDesktopServices::openUrl(fileUrl)) {
+        this->openUrl(path);
+    }
+}
+
+void MainWindow::actionContextDeleteTriggered() {
+    QModelIndex index = m_ui->treeView->currentIndex();
+    QString path = m_model->path(index);
+    QFile file(path);
+    if (!file.moveToTrash()) {
+        qDebug() << "QFile::moveToTrash() failed";
+        qDebug() << "Trying QFile::remove()...";
+        if (!file.remove()) {
+            qDebug() << "QFile::remove() failed";
+            return;
+        }
+    }
+    refreshModel(m_model->getFilter());
+}
+
+void MainWindow::openUrl(const QString& url) {
+    QString command;
+#ifdef Q_OS_WIN
+    command = "start " + url;
+#elif defined(Q_OS_MACOS)
+    command = "open " + url;
+#elif defined(Q_OS_LINUX)
+    command = "xdg-open " + url;
+#else
+    qDebug() << "Unsupported operating system";
+    return;
+#endif
+
+    QProcess::startDetached(command);
 }

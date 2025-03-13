@@ -15,6 +15,16 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
+    <item row="1" column="0">
+     <widget class="QTreeView" name="treeView">
+      <property name="mouseTracking">
+       <bool>true</bool>
+      </property>
+      <property name="animated">
+       <bool>false</bool>
+      </property>
+     </widget>
+    </item>
     <item row="0" column="0">
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
@@ -43,7 +53,7 @@
       <item>
        <spacer name="horizontalSpacer">
         <property name="orientation">
-         <enum>Qt::Horizontal</enum>
+         <enum>Qt::Orientation::Horizontal</enum>
         </property>
         <property name="sizeHint" stdset="0">
          <size>
@@ -68,47 +78,22 @@
       </item>
      </layout>
     </item>
-    <item row="1" column="0">
-     <widget class="QTreeView" name="treeView">
-      <property name="mouseTracking">
-       <bool>true</bool>
-      </property>
-      <property name="animated">
-       <bool>false</bool>
-      </property>
-     </widget>
+    <item row="2" column="0">
+     <widget class="QComboBox" name="comboBox"/>
     </item>
    </layout>
   </widget>
+  <widget class="QStatusBar" name="statusbar"/>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>26</height>
+     <height>22</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menuOpen_folder">
-    <property name="title">
-     <string>Menu</string>
-    </property>
-    <addaction name="actionOpen_folder"/>
-    <addaction name="actionfilter"/>
-    <addaction name="actionSearch_duplicates"/>
-    <addaction name="actionDelete_duplicates"/>
-    <addaction name="actionExit"/>
-   </widget>
-   <widget class="QMenu" name="menuAbout">
-    <property name="title">
-     <string>About</string>
-    </property>
-    <addaction name="actionAbout_Qt"/>
-   </widget>
-   <addaction name="menuOpen_folder"/>
-   <addaction name="menuAbout"/>
   </widget>
-  <widget class="QStatusBar" name="statusbar"/>
   <action name="actionOpen_folder">
    <property name="text">
     <string>Open folder</string>
