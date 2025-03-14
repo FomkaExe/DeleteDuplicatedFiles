@@ -36,6 +36,8 @@ MainWindow::MainWindow(QWidget *parent) :
     m_ui->setupUi(this);
     this->setWindowTitle("Delete duplicated files");
 
+    m_ui->labelDir->setText("");
+
     /* Combo Box init */
     QStringList comboBoxItemsList = { "All", "Images", "Documents",
                                      "Music", "Videos" };
@@ -136,6 +138,7 @@ void MainWindow::openFolderButtonSlot() {
         header->setSectionResizeMode(0, QHeaderView::ResizeToContents);
         header->setSectionResizeMode(1, QHeaderView::ResizeToContents);
         header->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+        m_ui->labelDir->setText(m_path);
     }
     QApplication::restoreOverrideCursor();
     setEnabled(true);

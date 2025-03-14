@@ -15,16 +15,6 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="1" column="0">
-     <widget class="QTreeView" name="treeView">
-      <property name="mouseTracking">
-       <bool>true</bool>
-      </property>
-      <property name="animated">
-       <bool>false</bool>
-      </property>
-     </widget>
-    </item>
     <item row="0" column="0">
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
@@ -78,8 +68,22 @@
       </item>
      </layout>
     </item>
+    <item row="1" column="0">
+     <widget class="QTreeView" name="treeView">
+      <property name="mouseTracking">
+       <bool>true</bool>
+      </property>
+      <property name="animated">
+       <bool>false</bool>
+      </property>
+     </widget>
+    </item>
     <item row="2" column="0">
-     <widget class="QComboBox" name="comboBox"/>
+     <widget class="QLabel" name="labelDir">
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
     </item>
    </layout>
   </widget>
