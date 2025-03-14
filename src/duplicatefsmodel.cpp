@@ -5,7 +5,7 @@
 #include <algorithm>
 
 DuplicateFSModel::DuplicateFSModel(const QString& root_path,
-                                   int filter,
+                                   TypeFilter filter,
                                    QObject *parent) :
     QAbstractItemModel{parent},
     m_item_counter(0) {
@@ -292,25 +292,25 @@ int DuplicateFSModel::deleteDuplicates(FSItem *root) {
     return deleted;
 }
 
-int DuplicateFSModel::getFilter() {
-    return static_cast<int>(m_filter);
+TypeFilter DuplicateFSModel::getFilter() {
+    return m_filter;
 }
 
-void DuplicateFSModel::setFilter(int filter) {
+void DuplicateFSModel::setFilter(TypeFilter filter) {
     switch (filter) {
-    case 0:
+    case TypeFilter::ALL:
         m_filter = TypeFilter::ALL;
         break;
-    case 1:
+    case TypeFilter::IMAGES:
         m_filter = TypeFilter::IMAGES;
         break;
-    case 2:
+    case TypeFilter::DOCUMENTS:
         m_filter = TypeFilter::DOCUMENTS;
         break;
-    case 3:
+    case TypeFilter::MUSIC:
         m_filter = TypeFilter::MUSIC;
         break;
-    case 4:
+    case TypeFilter::VIDEOS:
         m_filter = TypeFilter::VIDEOS;
         break;
     }

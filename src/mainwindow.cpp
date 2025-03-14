@@ -70,17 +70,17 @@ MainWindow::MainWindow(QWidget *parent) :
             this, &MainWindow::openFolderButtonSlot);
 
     connect(m_filterALL, &QAction::triggered,
-            this, [this]() {refreshModel(0);});
+            this, [this]() {refreshModel(TypeFilter::ALL);});
     connect(m_filterIMAGES, &QAction::triggered,
-            this, [this]() {refreshModel(1);});
+            this, [this]() {refreshModel(TypeFilter::IMAGES);});
     connect(m_filterDOCUMENTS, &QAction::triggered,
-            this, [this]() {refreshModel(2);});
+            this, [this]() {refreshModel(TypeFilter::DOCUMENTS);});
     connect(m_filterMUSIC, &QAction::triggered,
-            this, [this]() {refreshModel(3);});
+            this, [this]() {refreshModel(TypeFilter::MUSIC);});
     connect(m_filterVIDEOS, &QAction::triggered,
-            this, [this]() {refreshModel(4);});
-    connect(m_ui->filesFormatComboBox, SIGNAL(activated(int)),
-            this, SLOT(refreshModel(int)));
+            this, [this]() {refreshModel(TypeFilter::VIDEOS);});
+    connect(m_ui->filesFormatComboBox, &QComboBox::activated,
+            this, [=](int sig) {refreshModel(static_cast<TypeFilter>(sig));});
 
     connect(m_actionDeleteDuplicates, &QAction::triggered,
             this, &MainWindow::deleteDuplicatesButtonSlot);
@@ -129,8 +129,8 @@ void MainWindow::openFolderButtonSlot() {
         m_ui->treeView->setModel(m_model);
         m_ui->treeView->setSelectionBehavior(QAbstractItemView::SelectRows);
         m_ui->treeView->setContextMenuPolicy(Qt::CustomContextMenu);
-        connect(m_ui->treeView, SIGNAL(customContextMenuRequested(const QPoint &)),
-                this, SLOT(onContextMenuRequest(const QPoint &)));
+        connect(m_ui->treeView, &QWidget::customContextMenuRequested,
+                this, &MainWindow::onContextMenuRequest);
 
         QHeaderView* header = m_ui->treeView->header();
         header->setSectionResizeMode(0, QHeaderView::ResizeToContents);
@@ -162,22 +162,21 @@ void MainWindow::actionAboutQtSlot() {
     QMessageBox::aboutQt(this);
 }
 
-void MainWindow::refreshModel(int index) {
+void MainWindow::refreshModel(TypeFilter filter) {
     if (!m_model) {
         return;
     }
     delete m_model;
     m_model = new DuplicateFSModel(m_path,
-                                   index);
+                                   filter);
     m_ui->treeView->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_ui->treeView->setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(m_ui->treeView, SIGNAL(customContextMenuRequested(const QPoint &)),
-            this, SLOT(onContextMenuRequest(const QPoint &)));
-
+    connect(m_ui->treeView, &QWidget::customContextMenuRequested,
+            this, &MainWindow::onContextMenuRequest);
     m_ui->treeView->setModel(m_model);
 
-    if (m_ui->filesFormatComboBox->currentIndex() != index) {
-        m_ui->filesFormatComboBox->setCurrentIndex(index);
+    if (m_ui->filesFormatComboBox->currentIndex() != static_cast<int>(filter)) {
+        m_ui->filesFormatComboBox->setCurrentIndex(static_cast<int>(filter));
     }
 }
 

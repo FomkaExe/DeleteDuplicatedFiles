@@ -2,24 +2,17 @@
 #define DUPLICATEFILESYSTEMMODEL_H
 
 #include "fsitem.h"
+#include "FileType.h"
 
 #include <QFileSystemModel>
 #include <QObject>
-
-enum class TypeFilter {
-    ALL,
-    IMAGES,
-    DOCUMENTS,
-    MUSIC,
-    VIDEOS
-};
 
 class DuplicateFSModel : public QAbstractItemModel {
     Q_OBJECT
 
 public:
     explicit DuplicateFSModel(const QString& root_path,
-                              int filter = 0,
+                              TypeFilter filter = TypeFilter::ALL,
                               QObject *parent = nullptr);
     ~DuplicateFSModel();
     QModelIndex index(int row, int column, const QModelIndex& parent) const;
@@ -34,8 +27,8 @@ public:
 public:
     void searchDuplicates();
     int deleteDuplicates(FSItem *root = nullptr);
-    int getFilter();
-    void setFilter(int filter);
+    TypeFilter getFilter();
+    void setFilter(TypeFilter filter);
     bool isImage(const QModelIndex &index);
     QString path(const QModelIndex &index);
 

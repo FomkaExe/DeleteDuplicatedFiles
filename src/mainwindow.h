@@ -3,6 +3,8 @@
 
 #include <QMainWindow>
 
+#include "FileType.h"
+
 class QFileSystemModel;
 class QTreeView;
 class DuplicateFSModel;
@@ -23,7 +25,7 @@ public slots:
     void openFolderButtonSlot();
     void deleteDuplicatesButtonSlot();
     void actionAboutQtSlot();
-    void refreshModel(int index);
+    void refreshModel(TypeFilter filter);
     void onContextMenuRequest(const QPoint &point);
     void actionContextOpenTriggered();
     void actionContextDeleteTriggered();
