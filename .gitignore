@@ -31,6 +31,7 @@ Makefile*
 *build-*
 *.qm
 *.prl
+.qtc_clangd
 
 # Qt unit tests
 target_wrapper.*
@@ -53,5 +54,5 @@ compile_commands.json
 
 *_qmlcache.qrc
 
-/bin
-/build
+*bin*
+*build*
